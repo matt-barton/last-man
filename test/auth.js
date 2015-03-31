@@ -8,7 +8,7 @@ describe('Auth', function(){
 		var username = 'USERNAME';
 		var password = 'PASSWORD';
 		var mockDb = {
-			view: function () {}
+			view: function (a, b, callback) {callback(null, {});}
 		};
 
 		it('On login attempt, Auth.login attempted', function(done) {
@@ -25,10 +25,35 @@ describe('Auth', function(){
 			mockDb.view=  function (viewName, options, callback) {
 				viewName.should.equal('user/byUsername');
 				options.key.should.equal(username.toLowerCase());
-				done();
+				callback(null, {});
 			};
 			var Auth = new authModule(mockDb);
-			Auth.login(username, password, function(e, success) {});
+			Auth.login(username, password, function(e, success) {
+				done();
+			});
+		});
+
+		it ('On login attempt, if an error occurs, an error is detected', function(done) {
+			var error = new Error ('an error');
+			mockDb.view=  function (viewName, options, callback) {
+				callback(error);
+			};
+			var Auth = new authModule(mockDb);
+			Auth.login(username, password, function(e, success) {
+				e.should.equal(error);
+				done();
+			});
+		});
+
+		it ('On login attempt, if username is unknown, failure is returned', function(done) {
+			mockDb.view=  function (viewName, options, callback) {
+				callback(null, []);
+			};
+			var Auth = new authModule(mockDb);
+			Auth.login(username, password, function(e, success) {
+				success.should.be.false;
+				done();
+			});
 		});
 	});
 });
